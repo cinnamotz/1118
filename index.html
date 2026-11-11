@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ONLY FOR CHASE >:3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Collect script errors (e.g. a typo in questions.js) so the page can show them.
+    window.__loadErrors = [];
+    window.addEventListener('error', function (e) {
+      var file = (e.filename || '').split('/').pop();
+      window.__loadErrors.push(e.message + (file ? ' (' + file + ', line ' + e.lineno + ')' : ''));
+    });
+  </script>
+</head>
+<body class="gm-page">
+  <div id="app" v-cloak>
+
+    <!-- ===================== Header ===================== -->
+    <header class="gm-header">
+      <div>
+        <h1>🎂 {{ title }} <span class="gm-tag">Game Master</span></h1>
+        <p class="gm-sub">Private dashboard — keep this window on your laptop, not the TV.</p>
+      </div>
+      <div class="gm-header-actions">
+        <span class="conn" :class="{ on: connected }">
+          <i class="dot"></i>{{ connected ? 'Presentation connected' : 'Presentation not connected' }}
+        </span>
+        <button class="btn btn-primary" @click="openPresentation">📺 Open Presentation Window</button>
+      </div>
+    </header>
+
+    <div class="warn" v-if="loadErrors.length">
+      <b>There's a problem loading your questions:</b>
+      <div v-for="e in loadErrors">{{ e }}</div>
+      <div>Check <code>js/questions.js</code> near that line — usually a missing comma between answers, or an apostrophe inside a 'single-quoted' answer (use "double quotes" instead).</div>
+    </div>
+
+    <p class="warn" v-if="!hasBroadcastChannel">
+      This browser doesn't support BroadcastChannel, so the two windows can't sync. Use a current Chrome, Edge or Firefox.
+    </p>
+
+    <div class="gm-grid">
+
+      <!-- ===================== Categories ===================== -->
+      <section class="panel cats-panel">
+        <h2>1 · Categories</h2>
+        <p class="hint" v-if="gameStarted">Pick one to open it on the TV.</p>
+        <p class="hint" v-else>Press <b>Start Game</b> first.</p>
+        <ul class="cat-list">
+          <li v-for="c in categories" :key="c.id">
+            <button class="cat-btn"
+                    :class="{ active: categoryId === c.id, played: isPlayed(c.id) }"
+                    :disabled="!gameStarted"
+                    @click="selectCategory(c.id)">
+              <span class="cat-emoji">
+                <img v-if="hasImage(c)" class="cat-img" :src="c.image" alt="" @error="imgFailed(c.id)">
+                <template v-else>{{ c.emoji }}</template>
+              </span>
+              <span class="cat-name">{{ c.name }}</span>
+              <span class="cat-played" v-if="isPlayed(c.id)">✓ played</span>
+            </button>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ===================== Round ===================== -->
+      <section class="panel round-panel">
+        <h2>2 · Round</h2>
+
+        <div v-if="!category && !gameStarted" class="lobby-box">
+          <div class="empty-emoji">🎈</div>
+          <h3>Starting screen is on the TV</h3>
+          <p>The TV is showing the available avatars. Have each team pick one and set a team name (right panel), then start.</p>
+          <button class="btn btn-go btn-big" @click="startGame">▶ Start Game</button>
+          <p class="hint" v-if="missingAvatars.length">No avatar yet: {{ missingAvatars.join(', ') }} (optional)</p>
+        </div>
+
+        <div v-else-if="!category && gameOver" class="lobby-box">
+          <div class="empty-emoji">🏆</div>
+          <h3>All categories played!</h3>
+          <p>The TV is showing the congratulations screen. {{ winner === null ? "It's a tie!" : teams[winner].name + ' wins!' }}</p>
+          <button class="btn btn-go btn-big" @click="resetEverything">🎉 Start a new game</button>
+          <p class="hint">Want to replay one? Pick it on the left and the TV goes back to its board.</p>
+        </div>
+
+        <div v-else-if="!category" class="empty">
+          <div class="empty-emoji">🎁</div>
+          <p>The TV is showing all the categories. Choose one on the left to begin.</p>
+          <button class="btn btn-ghost" @click="backToLobby">↩ Back to start screen</button>
+        </div>
+
+        <div v-else>
+          <div class="round-head">
+            <div>
+              <div class="round-cat">
+                <img v-if="hasImage(category)" class="cat-img cat-img-lg" :src="category.image" alt="" @error="imgFailed(category.id)">
+                <template v-else>{{ category.emoji }}</template>
+                {{ category.name }}
+              </div>
+              <div class="round-question">{{ category.question }}</div>
+            </div>
+            <div class="pot" v-if="phase !== 'ready'">
+              <span class="pot-label">Round pot</span>
+              <span class="pot-value">{{ pot }}</span>
+            </div>
+          </div>
+
+          <!-- Step: choose first dibs + start -->
+          <div v-if="phase === 'ready'" class="start-box">
+            <div class="start-label">Who buzzed in first?</div>
+            <div class="start-teams">
+              <button v-for="(t, i) in teams" :key="i"
+                      class="start-btn" :class="['team-' + i, { picked: pendingStarter === i }]"
+                      @click="chooseStarter(i)">
+                {{ pendingStarter === i ? '✔ ' : '' }}{{ t.name }}
+              </button>
+            </div>
+            <button class="btn btn-go btn-big" :disabled="pendingStarter === null" @click="startRound">
+              ▶ Start This Round (face-off)
+            </button>
+            <p class="hint" v-if="retry">Nobody got an answer on the board — pick whoever buzzes in this time.</p>
+            <p class="hint" v-else-if="pendingStarter === null">Pick the team that buzzed in — the game never chooses for you.</p>
+          </div>
+
+          <!-- Live status + action buttons -->
+          <div v-else class="status-box" :class="activeTeam !== null ? 'team-' + activeTeam : ''">
+            <div class="status-text">
+              <div class="status-headline">{{ status.headline }}</div>
+              <div class="status-sub">{{ status.sub }}</div>
+            </div>
+            <div class="status-actions">
+              <button v-if="phase === 'faceoff' || phase === 'faceoff2'"
+                      class="btn btn-strike btn-big" @click="faceoffMiss">
+                ✖ Not on the board
+              </button>
+              <template v-if="phase === 'decide'">
+                <button class="btn btn-go btn-big" @click="decide(true)">
+                  ▶ {{ teams[faceoffWinner].name }} plays
+                </button>
+                <button class="btn btn-primary btn-big" @click="decide(false)">
+                  ↪ Pass to {{ teams[1 - faceoffWinner].name }}
+                </button>
+              </template>
+              <button v-if="phase === 'control'"
+                      class="btn btn-strike btn-big" @click="addStrike">
+                ✖ Wrong answer (strike)
+              </button>
+              <button v-if="phase === 'steal'" class="btn btn-strike btn-big" @click="stealFailed">
+                ✖ Steal failed
+              </button>
+              <button v-if="phase === 'ended'" class="btn btn-primary btn-big" @click="backToCategories">
+                ⬅ Back to categories
+              </button>
+            </div>
+            <p class="hint" v-if="phase === 'faceoff'">
+              Press <b>#1 — wins!</b> if they said the top answer, <b>On the board</b> on the answer they said, or <b>Not on the board</b>.
+            </p>
+            <p class="hint" v-if="phase === 'faceoff2'">
+              <template v-if="faceoffRank === null">First team missed — any answer on the board wins the face-off.</template>
+              <template v-else>They must beat the revealed answer with a higher-ranking one; otherwise the first team wins.</template>
+            </p>
+            <p class="hint" v-if="phase === 'decide'">Ask the winning team whether they play or pass. Revealed face-off points are already in the pot.</p>
+            <p class="hint" v-if="phase === 'steal'">Correct steal? Press <b>Steal!</b> on the answer they said.</p>
+            <p class="hint" v-if="phase === 'ended'">Optional: show the leftover answers below (no points change).</p>
+          </div>
+
+          <!-- Answer table: GM sees EVERYTHING -->
+          <table class="answers">
+            <thead>
+              <tr><th>#</th><th>Answer</th><th>Points</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(a, i) in answers" :key="i" :class="{ shown: revealed[i] }">
+                <td class="rank">{{ i + 1 }}</td>
+                <td class="ans-text">{{ a.text }}</td>
+                <td class="ans-pts">{{ a.points }}</td>
+                <td><span class="pill" :class="revealed[i] ? 'pill-on' : 'pill-off'">{{ revealed[i] ? 'Revealed' : 'Hidden' }}</span></td>
+                <td class="ans-act">
+                  <button class="btn btn-row" :class="rowAction(i).cls"
+                          :disabled="!rowAction(i).enabled" @click="reveal(i)">
+                    {{ rowAction(i).label }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="round-foot">
+            <button class="btn btn-ghost" :disabled="!history.length" @click="undo">↶ Undo last action</button>
+            <button class="btn btn-ghost" v-if="inRound" @click="abandonRound">Abandon round (no points)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== Teams ===================== -->
+      <section class="panel teams-panel">
+        <h2>Teams &amp; Scores</h2>
+
+        <div class="team-box" v-for="(t, i) in teams" :key="i"
+             :class="['team-' + i, { active: activeTeam === i }]">
+          <div class="avatar-label">Avatar</div>
+          <div class="avatar-picker" role="group" :aria-label="t.name + ' avatar'">
+            <button v-for="a in avatars" :key="a.id" type="button" class="avatar-opt"
+                    :class="{ selected: t.avatar === a.id }"
+                    :disabled="avatarTaken(i, a.id)"
+                    :title="avatarTaken(i, a.id) ? a.name + ' (other team has it)' : a.name"
+                    :aria-pressed="t.avatar === a.id ? 'true' : 'false'"
+                    @click="chooseAvatar(i, a.id)">
+              <img v-if="a.image && !brokenAvatars[a.id]" :src="a.image" alt="" @error="avatarFailed(a.id)">
+              <span v-else>{{ a.emoji }}</span>
+            </button>
+          </div>
+          <input class="team-name" v-model="t.name" maxlength="24" aria-label="Team name">
+          <div class="team-score">{{ t.score }}</div>
+          <div class="team-badge" v-if="teamBadges[i]">{{ teamBadges[i] }}</div>
+          <div class="strike-row" :aria-label="strikes[i] + ' strikes'">
+            <span v-for="n in maxStrikes" :key="n" class="x" :class="{ on: strikes[i] >= n }">✖</span>
+          </div>
+          <div class="adjust">
+            <input type="number" min="0" step="10" v-model.number="adjust[i]" aria-label="Points to adjust">
+            <button class="btn btn-mini" @click="adjustScore(i, 1)">+ Add</button>
+            <button class="btn btn-mini" @click="adjustScore(i, -1)">− Remove</button>
+          </div>
+        </div>
+
+        <div class="reset-zone">
+          <button class="btn btn-ghost" @click="resetScores">Reset scores</button>
+          <button class="btn btn-ghost danger" @click="resetEverything">New game</button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

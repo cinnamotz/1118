@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Birthday Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="stage-page">
+  <div id="confetti" aria-hidden="true"></div>
+
+  <div id="app" v-cloak class="stage">
+
+    <!-- Waiting for the Game Master window -->
+    <div v-if="!state" class="waiting">
+      <div class="waiting-emoji">🎈</div>
+      <h1>Do you know Chase? We'll find out!</h1>
+      <p v-if="unsupported">This browser can't sync with the Game Master window.</p>
+      <p v-else>Waiting for the Game Master…</p>
+    </div>
+
+    <template v-else>
+      <header class="topbar">
+        <span class="deco">🎈</span>
+        <h1>{{ state.title }}</h1>
+        <span class="deco">🎂</span>
+      </header>
+
+      <main class="layout">
+
+        <!-- Team 1 -->
+        <aside class="team-card team-0" :class="{ active: state.activeTeam === 0 }">
+          <transition name="pop" mode="out-in">
+            <div class="tc-avatar" v-if="state.teams[0].avatar" :key="state.teams[0].avatar.image || state.teams[0].avatar.emoji">
+              <img v-if="state.teams[0].avatar.image && !badAvatars[state.teams[0].avatar.image]"
+                   :src="state.teams[0].avatar.image" alt=""
+                   @error="$set(badAvatars, state.teams[0].avatar.image, true)">
+              <span v-else>{{ state.teams[0].avatar.emoji }}</span>
+            </div>
+            <div class="tc-avatar empty" v-else-if="!state.gameStarted" key="empty">?</div>
+          </transition>
+          <div class="tc-name">{{ state.teams[0].name }}</div>
+          <div class="tc-score">{{ state.teams[0].score }}</div>
+          <div class="tc-badge">
+            <transition name="badge" mode="out-in">
+              <span v-if="state.badges[0]" :key="state.badges[0]">{{ state.badges[0] }}</span>
+              <span v-else key="none" class="badge-spacer">&nbsp;</span>
+            </transition>
+          </div>
+          <div class="tc-strikes">
+            <span v-for="n in state.maxStrikes" :key="n" class="x" :class="{ on: state.strikes[0] >= n }">✖</span>
+          </div>
+        </aside>
+
+        <!-- Board -->
+        <section class="board-wrap">
+          <template v-if="showBoard">
+            <div class="cat-pill">
+              <img v-if="state.category.image && badImg !== state.category.image"
+                   class="cat-pill-img" :src="state.category.image" alt=""
+                   @error="badImg = state.category.image">
+              <span v-else>{{ state.category.emoji }}</span>
+              {{ state.category.name }}
+            </div>
+            <h2 class="question">{{ state.category.question }}</h2>
+
+            <ol class="board" :style="{ gridTemplateRows: 'repeat(' + slotCount + ', 1fr)' }">
+              <li v-for="(slot, i) in state.slots" :key="i" class="slot" :class="{ open: slot.revealed }">
+                <span class="slot-num">{{ i + 1 }}</span>
+                <transition name="flip" mode="out-in">
+                  <div v-if="slot.revealed" key="shown" class="slot-face shown">
+                    <span class="slot-text">{{ slot.text }}</span>
+                    <span class="slot-pts">{{ slot.points }}</span>
+                  </div>
+                  <div v-else key="hidden" class="slot-face hidden-face"></div>
+                </transition>
+              </li>
+            </ol>
+
+            <div class="pot-line" v-if="state.phase !== 'ready'">
+              Round total <strong>{{ state.pot }}</strong>
+            </div>
+          </template>
+
+          <!-- Starting screen: the avatars teams can pick from -->
+          <div v-else-if="!state.gameStarted" class="lobby">
+            <h2 class="lobby-title">Pick your avatar!</h2>
+            <div class="lobby-grid" :style="{ gridTemplateColumns: 'repeat(' + cols(state.avatars.length) + ', minmax(0, 1fr))' }">
+              <div v-for="a in state.avatars" :key="a.id" class="av-card"
+                   :class="a.team !== null ? ['taken', 'team-' + a.team] : ''">
+                <div class="av-pic">
+                  <img v-if="imgOk(a.image)" :src="a.image" alt="" @error="markBroken(a.image)">
+                  <span v-else>{{ a.emoji }}</span>
+                </div>
+                <div class="av-name">{{ a.name }}</div>
+                <div class="av-tag" v-if="a.team !== null">{{ state.teams[a.team].name }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Every category played: congratulations -->
+          <div v-else-if="state.gameOver" class="finale">
+            <div class="finale-emoji">🎉</div>
+            <h2 class="finale-title">Congratulations!</h2>
+            <template v-if="winnerIndex !== null">
+              <div class="finale-avatar" :class="'team-' + winnerIndex" v-if="winnerAvatar">
+                <img v-if="imgOk(winnerAvatar.image)" :src="winnerAvatar.image" alt="" @error="markBroken(winnerAvatar.image)">
+                <span v-else>{{ winnerAvatar.emoji }}</span>
+              </div>
+              <div class="finale-winner">{{ state.teams[winnerIndex].name }} wins!</div>
+            </template>
+            <div class="finale-winner" v-else>It's a tie!</div>
+            <div class="finale-scores">
+              <span class="fs team-0">{{ state.teams[0].name }} <b>{{ state.teams[0].score }}</b></span>
+              <span class="fs team-1">{{ state.teams[1].name }} <b>{{ state.teams[1].score }}</b></span>
+            </div>
+            <div class="finale-sub">All {{ state.categories.length }} categories played. Thanks for playing!</div>
+          </div>
+
+          <!-- After Start Game: every category, played ones ticked off -->
+          <div v-else class="menu">
+            <h2 class="lobby-title">Choose a category!</h2>
+            <div class="menu-grid" :style="{ gridTemplateColumns: 'repeat(' + cols(state.categories.length) + ', minmax(0, 1fr))' }">
+              <div v-for="c in state.categories" :key="c.id" class="menu-card" :class="{ played: c.played }">
+                <div class="menu-icon">
+                  <img v-if="imgOk(c.image)" :src="c.image" alt="" @error="markBroken(c.image)">
+                  <span v-else>{{ c.emoji }}</span>
+                </div>
+                <div class="menu-name">{{ c.name }}</div>
+                <div class="menu-check" v-if="c.played">✓</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Team 2 -->
+        <aside class="team-card team-1" :class="{ active: state.activeTeam === 1 }">
+          <transition name="pop" mode="out-in">
+            <div class="tc-avatar" v-if="state.teams[1].avatar" :key="state.teams[1].avatar.image || state.teams[1].avatar.emoji">
+              <img v-if="state.teams[1].avatar.image && !badAvatars[state.teams[1].avatar.image]"
+                   :src="state.teams[1].avatar.image" alt=""
+                   @error="$set(badAvatars, state.teams[1].avatar.image, true)">
+              <span v-else>{{ state.teams[1].avatar.emoji }}</span>
+            </div>
+            <div class="tc-avatar empty" v-else-if="!state.gameStarted" key="empty">?</div>
+          </transition>
+          <div class="tc-name">{{ state.teams[1].name }}</div>
+          <div class="tc-score">{{ state.teams[1].score }}</div>
+          <div class="tc-badge">
+            <transition name="badge" mode="out-in">
+              <span v-if="state.badges[1]" :key="state.badges[1]">{{ state.badges[1] }}</span>
+              <span v-else key="none" class="badge-spacer">&nbsp;</span>
+            </transition>
+          </div>
+          <div class="tc-strikes">
+            <span v-for="n in state.maxStrikes" :key="n" class="x" :class="{ on: state.strikes[1] >= n }">✖</span>
+          </div>
+        </aside>
+      </main>
+
+
+      <!-- Big strike X -->
+      <transition name="strike">
+        <div class="strike-overlay" v-if="flash">
+          <div class="strike-xs">
+            <span v-for="n in flash.count" :key="n">✖</span>
+          </div>
+          <div class="strike-team">{{ state.teams[flash.team].name }}</div>
+        </div>
+      </transition>
+    </template>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+  <script src="js/presentation.js"></script>
+</body>
+</html>
