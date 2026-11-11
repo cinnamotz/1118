@@ -29,14 +29,14 @@ window.GAME_CONFIG = {
 
     // Avatars teams can pick from (PNGs in images/avatars/)
   avatars: [
-    { id: "avatar-1", name: "Avatar 1", image: "images/avatar-1.jpg", emoji: "🐱" },
-    { id: "avatar-2", name: "Avatar 2", image: "images/avatar-2.jpg", emoji: "🐶" },
-    { id: "avatar-3", name: "Avatar 3", image: "images/avatar-3.jpg", emoji: "🦊" },
-    { id: "avatar-4", name: "Avatar 4", image: "images/avatar-4.jpg", emoji: "🐼" },
-    { id: "avatar-5", name: "Avatar 5", image: "images/avatar-5.jpg", emoji: "🐰" },
-    { id: "avatar-6", name: "Avatar 6", image: "images/avatar-6.jpg", emoji: "🐸" },
-    { id: "avatar-7", name: "Avatar 7", image: "images/avatar-7.jpg", emoji: "🦄" },
-    { id: "avatar-8", name: "Avatar 8", image: "images/avatar-8.jpg", emoji: "🐙" }
+    { id: "avatar-1", name: "Leon", image: "images/avatar-1.jpg", emoji: "🐱" },
+    { id: "avatar-2", name: "Honse", image: "images/avatar-2.jpg", emoji: "🐶" },
+    { id: "avatar-3", name: "Maus", image: "images/avatar-3.jpg", emoji: "🦊" },
+    { id: "avatar-4", name: "Alien", image: "images/avatar-4.jpg", emoji: "🐼" },
+    { id: "avatar-5", name: "Link", image: "images/avatar-5.jpg", emoji: "🐰" },
+    { id: "avatar-6", name: "Bitch", image: "images/avatar-6.jpg", emoji: "🐸" },
+    { id: "avatar-7", name: "HUUUUH??", image: "images/avatar-7.jpg", emoji: "🦄" },
+    { id: "avatar-8", name: "Threat", image: "images/avatar-8.jpg", emoji: "🐙" }
   ],
 
   // Points by rank, used whenever an answer has no explicit `points`.
@@ -71,14 +71,16 @@ window.GAME_CATEGORIES = [
     name: "Gaming",
     emoji: "🎮",
     image: "images/gaming.png",
-    question: "Name Chase's top 6 video game franchises",
+    question: "Name Chase's top 8 video game franchises",
     answers: [
       { text: "Pokémon" },
       { text: "The Legend of Zelda" },
       { text: "Resident Evil" },
       { text: "Animal Crossing" },
       { text: "Slime Rancher" },
-      { text: "Five Nights at Freddy's" }
+      { text: "Five Nights at Freddy's" },
+      { text: "Street Fighter" },
+      { text: "Final Fantasy" }
     ]
   },
   {
@@ -139,7 +141,7 @@ window.GAME_CATEGORIES = [
     image: "images/food.png",
     question: "Name Chase's top 8 favorite foods",
     answers: [
-      { text: "7-11 Onigiri" },
+      { text: "Sushi and Onigiri" },
       { text: "Cheesecake" },
       { text: "Char Siu" },
       { text: "Poke Bowl" },
@@ -159,11 +161,11 @@ window.GAME_CATEGORIES = [
       { text: "Toy Story" },
       { text: "Mission Impossible" },
       { text: "Captain America The Winter Soldier" },
-      { text: "The Incredibles" },
+      { text: "Ninjago" },
       { text: "Spider-Man Across the Spider-Verse" },
       { text: "Arcane" },
-      { text: "Top Gun Maverick" },
-      { text: "Ninjago" }
+      { text: "Voltron" },
+      { text: "The Incredibles" }
     ]
   },
   {
