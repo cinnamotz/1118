@@ -80,11 +80,19 @@
           <p class="hint" v-if="missingAvatars.length">No avatar yet: {{ missingAvatars.join(', ') }} (optional)</p>
         </div>
 
+        <div v-else-if="!category && bonusDue" class="lobby-box">
+          <div class="empty-emoji">{{ bonus.emoji }}</div>
+          <h3>{{ bonus.name }} time!</h3>
+          <p>The regular rounds are done. Play the bonus round before the final scores.</p>
+          <button class="btn btn-go btn-big" @click="startBonus">⭐ Start {{ bonus.name }}</button>
+        </div>
+
         <div v-else-if="!category && gameOver" class="lobby-box">
           <div class="empty-emoji">🏆</div>
-          <h3>All categories played!</h3>
+          <h3>{{ allPlayed ? 'All categories played!' : 'Game over!' }}</h3>
           <p>The TV is showing the congratulations screen. {{ winner === null ? "It's a tie!" : teams[winner].name + ' wins!' }}</p>
           <button class="btn btn-go btn-big" @click="resetEverything">🎉 Start a new game</button>
+          <button class="btn btn-ghost" v-if="endedEarly && !allPlayed" @click="resumeGame">↩ Resume game</button>
           <p class="hint">Want to replay one? Pick it on the left and the TV goes back to its board.</p>
         </div>
 
@@ -154,7 +162,7 @@
                 ✖ Steal failed
               </button>
               <button v-if="phase === 'ended'" class="btn btn-primary btn-big" @click="backToCategories">
-                ⬅ Back to categories
+                {{ backLabel }}
               </button>
             </div>
             <p class="hint" v-if="phase === 'faceoff'">
@@ -230,6 +238,7 @@
 
         <div class="reset-zone">
           <button class="btn btn-ghost" @click="resetScores">Reset scores</button>
+          <button class="btn btn-ghost" :disabled="!gameStarted || gameOver" @click="endGameEarly">{{ bonusPending && !inBonus ? '⭐ End → Bonus Round' : '🏁 End game now' }}</button>
           <button class="btn btn-ghost danger" @click="resetEverything">New game</button>
         </div>
       </section>

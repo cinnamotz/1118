@@ -101,6 +101,8 @@
           this.flashTimer = setTimeout(function () { self.flash = null; }, 1500);
         } else if (ev.type === 'roundEnd' && ev.points > 0) {
           this.confetti();
+        } else if (ev.type === 'bonus') {
+          this.confetti();
         } else if (ev.type === 'gameStart') {
           this.confetti();
         } else if (ev.type === 'gameOver') {

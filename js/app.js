@@ -57,6 +57,16 @@
     });
   }
 
+  // Optional GAME_BONUS in questions.js -> one extra round played after the others.
+  function normalizeBonus(raw) {
+    if (!raw) return null;
+    var b = normalizeCategories([raw])[0];
+    b.id = 'bonus-round';
+    b.name = raw.name || 'Bonus Round';
+    b.emoji = raw.emoji || '⭐';
+    return b;
+  }
+
   function loadSaved() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -77,6 +87,8 @@
       return {
         title: CFG.title || 'Birthday Game',
         categories: normalizeCategories(window.GAME_CATEGORIES),
+        bonus: normalizeBonus(window.GAME_BONUS),
+        bonusSkipped: false, // game ended during the bonus round
         loadErrors: (window.__loadErrors || []).concat(
           window.GAME_CATEGORIES ? [] : ['questions.js did not load, so there are no categories.']
         ),
@@ -88,6 +100,7 @@
         ],
         avatars: AVATARS,
         brokenAvatars: {}, // avatar ids whose image file failed to load
+        endedEarly: false, // GM pressed "End game now"
         gameStarted: false, // false = starting screen (avatars), true = category menu + rounds
 
         // Round state
@@ -123,7 +136,7 @@
     computed: {
       category: function () {
         var id = this.categoryId;
-        return this.categories.filter(function (c) { return c.id === id; })[0] || null;
+        return this.allCats.filter(function (c) { return c.id === id; })[0] || null;
       },
       answers: function () {
         return this.category ? this.category.answers : [];
@@ -141,8 +154,25 @@
           return ids.indexOf(c.id) !== -1;
         });
       },
+      allCats: function () {
+        return this.bonus ? this.categories.concat([this.bonus]) : this.categories;
+      },
+      regularDone: function () { return this.allPlayed || this.endedEarly; },
+      bonusPending: function () {
+        return !!this.bonus && !this.bonusSkipped && this.playedIds.indexOf(this.bonus.id) === -1;
+      },
+      inBonus: function () { return !!this.bonus && this.categoryId === this.bonus.id; },
+      // Regular rounds are finished and the bonus round is still waiting.
+      bonusDue: function () {
+        return this.gameStarted && this.phase === 'idle' && this.regularDone && this.bonusPending;
+      },
       gameOver: function () {
-        return this.gameStarted && this.phase === 'idle' && this.allPlayed;
+        return this.gameStarted && this.phase === 'idle' && this.regularDone && !this.bonusPending;
+      },
+      backLabel: function () {
+        if (this.inBonus) return '🏆 Finish game';
+        if (this.regularDone && this.bonusPending) return '⭐ On to the Bonus Round';
+        return '⬅ Back to categories';
       },
       // 0 / 1 for the team in the lead, null for a tie.
       winner: function () {
@@ -273,7 +303,12 @@
           activeTeam: this.activeTeam,
           badges: this.teamBadges,
           category: cat
-            ? { name: cat.name, emoji: cat.emoji, image: cat.image, question: cat.question }
+            ? {
+                name: cat.name, emoji: cat.emoji, image: cat.image, question: cat.question,
+                bonus: !!this.bonus && cat.id === this.bonus.id,
+                round: this.playedIds.indexOf(cat.id) !== -1 ? this.playedIds.indexOf(cat.id) + 1 : this.playedIds.length + 1,
+                total: this.categories.length
+              }
             : null,
           slots: cat
             ? cat.answers.map(function (a, i) {
@@ -292,6 +327,8 @@
       persisted: function () {
         return JSON.stringify({
           gameStarted: this.gameStarted,
+          endedEarly: this.endedEarly,
+          bonusSkipped: this.bonusSkipped,
           teams: this.teams,
           categoryId: this.categoryId,
           phase: this.phase,
@@ -372,12 +409,14 @@
             });
           }
           this.playedIds = (s.playedIds || []).filter(this.categoryExists);
+          this.endedEarly = !!s.endedEarly;
+          this.bonusSkipped = !!s.bonusSkipped;
           // Saves from before the start screen existed: treat as already started.
           this.gameStarted = s.gameStarted !== undefined
             ? !!s.gameStarted
             : !!((s.phase && s.phase !== 'idle') || this.playedIds.length);
           if (s.categoryId && this.categoryExists(s.categoryId)) {
-            var cat = this.categories.filter(function (c) { return c.id === s.categoryId; })[0];
+            var cat = this.allCats.filter(function (c) { return c.id === s.categoryId; })[0];
             if (s.revealed && s.revealed.length === cat.answers.length) {
               this.categoryId = s.categoryId;
               this.phase = s.phase || 'ready';
@@ -399,7 +438,7 @@
       },
 
       categoryExists: function (id) {
-        return this.categories.some(function (c) { return c.id === id; });
+        return this.allCats.some(function (c) { return c.id === id; });
       },
 
       fire: function (type, extra) {
@@ -488,6 +527,7 @@
       /* ---------- round flow ---------- */
       selectCategory: function (id) {
         if (!this.gameStarted) return;
+        this.endedEarly = false; // picking a category resumes play
         if (this.category && this.category.id === id && this.phase === 'ready') return;
         if (this.inRound &&
             !confirm('A round is still in progress. Abandon it (no points awarded) and open this category?')) {
@@ -495,12 +535,23 @@
         }
         this.pushHistory();
         this.clearRound();
-        var cat = this.categories.filter(function (c) { return c.id === id; })[0];
+        var cat = this.allCats.filter(function (c) { return c.id === id; })[0];
         if (!cat) return;
-        this.categoryId = id;
+        this.openRound(cat, 'category');
+      },
+
+      openRound: function (cat, eventType) {
+        this.categoryId = cat.id;
         this.revealed = cat.answers.map(function () { return false; });
         this.phase = 'ready';
-        this.fire('category', {});
+        this.fire(eventType, {});
+      },
+
+      startBonus: function () {
+        if (!this.bonus || this.inRound) return;
+        this.pushHistory();
+        this.clearRound();
+        this.openRound(this.bonus, 'bonus');
       },
 
       chooseStarter: function (i) {
@@ -650,8 +701,35 @@
       backToCategories: function () {
         this.pushHistory();
         this.clearRound();
-        // Last category done? Celebrate instead of showing the menu.
+        // Regular rounds done: bonus round next, then the finale.
+        if (this.bonusDue) { this.openRound(this.bonus, 'bonus'); return; }
         this.fire(this.gameOver ? 'gameOver' : 'category', {});
+      },
+
+      // End the whole game now: drops any unfinished round (no points) and shows the finale.
+      endGameEarly: function () {
+        if (!this.gameStarted) return;
+        var wasBonus = this.inBonus;
+        var toBonus = this.bonusPending && !wasBonus;
+        var msg = toBonus
+          ? 'End the regular rounds and go to the Bonus Round?' + (this.inRound ? ' The round in progress is dropped (no points).' : '')
+          : (this.inRound
+              ? 'End the game now? The round in progress is dropped (no points) and the TV shows the winner.'
+              : 'End the game now and show the winner on the TV?');
+        if (!confirm(msg)) return;
+        this.clearRound();
+        this.endedEarly = true;
+        if (toBonus) {
+          this.openRound(this.bonus, 'bonus');
+        } else {
+          if (wasBonus) this.bonusSkipped = true;
+          this.fire('gameOver', {});
+        }
+      },
+      resumeGame: function () {
+        this.endedEarly = false;
+        this.bonusSkipped = false;
+        this.fire('category', {});
       },
 
       abandonRound: function () {
@@ -681,6 +759,8 @@
         this.teams.forEach(function (t) { t.score = 0; });
         this.playedIds = [];
         this.history = [];
+        this.endedEarly = false;
+        this.bonusSkipped = false;
         this.gameStarted = false; // back to the starting screen
         this.fire('category', {});
       },

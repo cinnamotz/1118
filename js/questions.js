@@ -34,13 +34,13 @@ window.GAME_CONFIG = {
     { id: "avatar-3", name: "Maus", image: "images/avatar-3.jpg", emoji: "🦊" },
     { id: "avatar-4", name: "Alien", image: "images/avatar-4.jpg", emoji: "🐼" },
     { id: "avatar-5", name: "Link", image: "images/avatar-5.jpg", emoji: "🐰" },
-    { id: "avatar-6", name: "Bitch", image: "images/avatar-6.jpg", emoji: "🐸" },
+    { id: "avatar-6", name: "Noot", image: "images/avatar-6.jpg", emoji: "🐸" },
     { id: "avatar-7", name: "HUUUUH??", image: "images/avatar-7.jpg", emoji: "🦄" },
     { id: "avatar-8", name: "Threat", image: "images/avatar-8.jpg", emoji: "🐙" }
   ],
 
   // Points by rank, used whenever an answer has no explicit `points`.
-  defaultPoints: [100, 80, 60, 40, 20, 10, 10, 10],
+  defaultPoints: [100, 90, 80, 70, 60, 50, 40, 30],
 
   // When the opposing team steals with a correct answer, does that stolen
   // answer's points count toward what they win?  true = yes (classic Feud).
@@ -54,7 +54,7 @@ window.GAME_CATEGORIES = [
     name: "Anime",
     emoji: "🍥",
     image: "images/anime.png",
-    question: "Name Chase's top 8 anime series",
+    question: "Name Chase's Top 8 Anime Series",
     answers: [
       { text: "Haikyuu!!" },
       { text: "Ace of Diamond!" },
@@ -71,7 +71,7 @@ window.GAME_CATEGORIES = [
     name: "Gaming",
     emoji: "🎮",
     image: "images/gaming.png",
-    question: "Name Chase's top 8 video game franchises",
+    question: "Name Chase's Top 8 Video Games/Series",
     answers: [
       { text: "Pokémon" },
       { text: "The Legend of Zelda" },
@@ -80,7 +80,7 @@ window.GAME_CATEGORIES = [
       { text: "Slime Rancher" },
       { text: "Five Nights at Freddy's" },
       { text: "Street Fighter" },
-      { text: "Final Fantasy" }
+      { text: "Stardew Valley" }
     ]
   },
   {
@@ -88,16 +88,16 @@ window.GAME_CATEGORIES = [
     name: "Stray Kids",
     emoji: "🎤",
     image: "images/skz.png",
-    question: "Name Chase's top 8 Stray Kids title tracks",
+    question: "Name Chase's Top 8 Stray Kids Albums",
     answers: [
-      { text: "Case 143" },
-      { text: "S-Class" },
-      { text: "DO IT" },
-      { text: "Back Door" },
-      { text: "THIS & THAT" },
+      { text: "MAXIDENT" },
+      { text: "5-STAR" },
+      { text: "ATE" },
+      { text: "GO LIVE IN LIFE" },
+      { text: "ODDINARY" },
       { text: "MANIAC" },
-      { text: "God's Menu" },
-      { text: "CHK CHK BOOM" }
+      { text: "DO IT" },
+      { text: "NOEASY" }
     ]
   },
   {
@@ -105,7 +105,7 @@ window.GAME_CATEGORIES = [
     name: "Hamilton",
     emoji: "🎭",
     image: "images/hamilton.png",
-    question: "Name Chase's top 8 favorite Hamilton songs",
+    question: "Name Chase's Top 8 Favorite Hamilton Songs",
     answers: [
       { text: "History Has Its Eyes on You" },
       { text: "Who Lives, Who Dies, Who Tells Your Story" },
@@ -113,7 +113,7 @@ window.GAME_CATEGORIES = [
       { text: "We Know" },
       { text: "The Room Where It Happens" },
       { text: "That Would Be Enough" },
-      { text: "The Schuyler Sisters" },
+      { text: "Burn" },
       { text: "Wait for It" }
     ]
   },
@@ -122,7 +122,7 @@ window.GAME_CATEGORIES = [
     name: "Comfort Characters",
     emoji: "💗",
     image: "images/comfort.png",
-    question: "Name Chase's top 8 comfort characters",
+    question: "Name Chase's Top 8 Comfort Characters",
     answers: [
       { text: "Ushijima Wakatoshi" },
       { text: "Leon S. Kennedy" },
@@ -139,7 +139,7 @@ window.GAME_CATEGORIES = [
     name: "Food",
     emoji: "🍜",
     image: "images/food.png",
-    question: "Name Chase's top 8 favorite foods",
+    question: "Name Chase's Top 8 Favorite Foods",
     answers: [
       { text: "Sushi and Onigiri" },
       { text: "Cheesecake" },
@@ -156,13 +156,13 @@ window.GAME_CATEGORIES = [
     name: "Movies & TV",
     emoji: "🎬",
     image: "images/movies.png",
-    question: "Name Chase's top 8 favorite movies and shows",
+    question: "Name Chase's Top 8 Favorite Movies and Shows",
     answers: [
       { text: "Toy Story" },
       { text: "Mission Impossible" },
       { text: "Captain America The Winter Soldier" },
       { text: "Ninjago" },
-      { text: "Spider-Man Across the Spider-Verse" },
+      { text: "Spider-Man: Spider-Verses" },
       { text: "Arcane" },
       { text: "Voltron" },
       { text: "The Incredibles" }
@@ -173,16 +173,32 @@ window.GAME_CATEGORIES = [
     name: "Hobbies",
     emoji: "🎨",
     image: "images/hobbies.png",
-    question: "Name Chase's top 8 favorite hobbies and sidequest activities",
+    question: "Name Chase's Top 8 Favorite Hobbies and Sidequest Activities",
     answers: [
       { text: "Journaling" },
       { text: "Video Games" },
-      { text: "Karaoke" },
-      { text: "Sleep" },
+      { text: "Karaoke/Singing" },
+      { text: "Concerts" },
       { text: "Dye my hair" },
-      { text: "Graphic Design" },
-      { text: "Photobooths" },
+      { text: "Errands" },
+      { text: "Watching Youtube/Markiplier and Pointcrow" },
       { text: "Listen to Music" }
     ]
   }
 ];
+window.GAME_BONUS = {
+  name: "Bonus Round",
+  emoji: "⭐",
+  image: "images/bonus.jpg",
+  question: "8 Things that Chase says a lot!",
+  answers: [
+    { text: "Oh my god im gonna _____" },
+    { text: "Oh shit" },
+    { text: "FAHHHHHHH" },
+    { text: "Oh I fucking hate it here" },
+    { text: "Holy fuck" },
+    { text: "You know what, hell yeah" },
+    { text: "And you know what, at the end of the day" },
+    { text: "Bruh" }
+  ]
+};

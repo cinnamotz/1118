@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Who is Chase's BFF?</title>
+  <title>Birthday Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,9 +17,9 @@
     <!-- Waiting for the Game Master window -->
     <div v-if="!state" class="waiting">
       <div class="waiting-emoji">🎈</div>
-      <h1>Do you know Chase? We'll find out!</h1>
+      <h1>How well do you know Chase?!</h1>
       <p v-if="unsupported">This browser can't sync with the Game Master window.</p>
-      <p v-else>Waiting for the Chase to get on with it...</p>
+      <p v-else>Waiting for Chase to get on with it...</p>
     </div>
 
     <template v-else>
@@ -57,7 +57,22 @@
 
         <!-- Board -->
         <section class="board-wrap">
-          <template v-if="showBoard">
+          <!-- Round announcement: shown while the GM is picking who buzzed in -->
+          <div v-if="showBoard && state.phase === 'ready'" class="announce" :key="state.category.name">
+            <div class="ann-eyebrow">
+              <template v-if="state.category.bonus">⭐ Bonus Round ⭐</template>
+              <template v-else>Round {{ state.category.round }} of {{ state.category.total }}</template>
+            </div>
+            <div class="ann-photo">
+              <img v-if="state.category.image && badImg !== state.category.image"
+                   :src="state.category.image" alt="" @error="badImg = state.category.image">
+              <span v-else class="ann-emoji">{{ state.category.emoji }}</span>
+            </div>
+            <h2 class="ann-name">{{ state.category.name }}</h2>
+            <p class="ann-question">{{ state.category.question }}</p>
+          </div>
+
+          <template v-else-if="showBoard">
             <div class="cat-pill">
               <img v-if="state.category.image && badImg !== state.category.image"
                    class="cat-pill-img" :src="state.category.image" alt=""
@@ -117,7 +132,7 @@
               <span class="fs team-0">{{ state.teams[0].name }} <b>{{ state.teams[0].score }}</b></span>
               <span class="fs team-1">{{ state.teams[1].name }} <b>{{ state.teams[1].score }}</b></span>
             </div>
-            <div class="finale-sub">All {{ state.categories.length }} categories played. Thanks for playing!</div>
+            <div class="finale-sub">Thanks for playing!</div>
           </div>
 
           <!-- After Start Game: every category, played ones ticked off -->
